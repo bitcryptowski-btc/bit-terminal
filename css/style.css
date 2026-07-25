@@ -1,0 +1,97 @@
+@import url(https://fonts.googleapis.com/css?family=VT323);
+@import url(https://fonts.googleapis.com/css?family=Inconsolata:400,700);
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+html {
+  background: #0e1628;
+  overflow-y: scroll;
+}
+
+body {
+  font: .875em/1.6 'Inconsolata', monospace;
+  color: #c9d3d6;
+  font-weight: 400;
+  max-width: 50em;
+  padding: 1em;
+  margin: 5% 0;
+}
+::selection{
+  background: #eee
+}
+::-webkit-selection{
+  background: #eee
+}
+::-moz-selection{
+  background: #eee
+}
+a{
+  color: #ff9966;
+}
+a:hover,a:focus{
+  background: #ff9966;
+  color:#181818;
+}
+g{
+  color: #ff9966;
+}
+h2{
+  font-size: 1.2em;
+  font-weight: 400;
+  color: #ccff99;
+}
+p{
+  margin-bottom:2em;
+}
+abbr{
+  cursor: help;
+}
+ul{
+  list-style: none;
+  padding: 0;
+}
+li{
+  margin:1em 0 0;
+}
+span{
+  display: block;
+  color:#ffccff;
+  line-height:1;
+}
+kbd{
+  font-family: 'VT323', monospace;
+  border:1px solid #ff9966;
+  text-transform: uppercase;
+  padding:0 .2em;
+}
+input[type="text"]{
+  max-width: 10em;
+  border: none;
+  font-family: inherit;
+  background: #0e1628;
+  padding:0 .5em;
+}
+input[type="text"]:focus{
+  background: #0e1628;
+  color: #eded65;
+  outline:none;
+}
+.command{
+  display: block;
+  max-width: 20em;
+  color: #33cccc;
+  font-weight: 700;
+  margin: 2em 0;
+}
+
+section{
+  display: none;
+}
+.open{
+  display: block;
+}
