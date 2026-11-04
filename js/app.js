@@ -1,95 +1,109 @@
-(function(e){"use strict";e.fn.textTyper=function(t){var n={typingClass:"typing",beforeAnimation:function(){},afterAnimation:function(){},speed:9,nextLineDelay:400,startsFrom:0,repeatAnimation:false,repeatDelay:4e3,repeatTimes:1,cursorHtml:'<span class="cursor">|</span>'},r=e.extend({},n,t);this.each(function(){var t=e(this),n=1,i="typingCursor";var s=t,o=s.length,u=[];while(o--){u[o]=e.trim(e(s[o]).html());e(s[o]).html("")}t.init=function(e){var n=r.beforeAnimation;if(n)n();t.animate(0)};t.animate=function(o){var a=s[o],f=r.typingClass,l=r.startsFrom;e(a).addClass(f);var c=setInterval(function(){var f=r.cursorHtml;f=e("<div>").append(e(f).addClass(i)).html();e(a).html(u[o].substr(0,l)+f);l++;if(u[o].length<l){clearInterval(c);o++;if(s[o]){setTimeout(function(){e(a).html(u[o-1]);t.animate(o)},r.nextLineDelay)}else{e(a).find("."+i).remove();if(r.repeatAnimation&&(r.repeatTimes==0||n<r.repeatTimes)){setTimeout(function(){t.animate(0);n++},r.repeatDelay)}else{var h=r.afterAnimation;if(h)h()}}}},r.speed)};t.init()});return this}})(jQuery)
+'use strict';
 
-
-// Let's do it!!
-$(document).ready(function() {
-
-  $('.command').hide();
-  $('input[type="text"]').focus();
-  $('#start').addClass('open');
-  $('#start').textTyper({
-        speed:9,
-        afterAnimation:function(){
-          $('.command').fadeIn();
-          $('input[type="text"]').focus();
-          $('input[type="text"]').val('');
-        }
-      });
-
-// get array of section ids, that exist in DOM
-var sectionArray = [];
-// We are using <section> here, you can use <div> or <article> if you want
-$('section').each( function(i,e) {
-    //you can use e.id instead of $(e).attr('id')
-    sectionArray.push($(e).attr('id'));
-});
-
-// Debug
-//console.log(sectionArray);
-
-
-
-// Command Input------------------------------
-
-  $('input[type="text"]').keyup(function(e){
-
-    if(e.which == 13){// ENTER key pressed
-
-      $('.command').hide();
-      var destination = $('input[type="text"]').val();
-
-      // Display section with id == destination and hide all others
-      $('section[id="' + destination + '"]').addClass('open').siblings().removeClass('open');
-
-      // If destination does not match our array of section ids, display error section
-      if($.inArray(destination, sectionArray) == -1){
-        $('#error').addClass('open');
-        $('#error').siblings().removeClass('open');
-      }
-
-      // All sections with class .open init textTyper
-      $('.open').textTyper({
-        speed:9,
-        afterAnimation:function(){
-          $('.command').fadeIn();
-          $('input[type="text"]').focus();
-          $('input[type="text"]').val('');
-        }
-      });
-
-    }// end if ENTER key pressed
-
-  });// end keyup function
-
-// End Command Input-----------------------------
-
-});
-
-
-window.onload = function() {
-
-  var pageTitle = document.title;
-  var attentionMessage = '💩🤖 Äh, Dude?';
-  var blinkEvent = null;
-
-  document.addEventListener('visibilitychange', function(e) {
-    var isPageActive = !document.hidden;
-
-    if(!isPageActive){
-      blink();
-    }else {
-      document.title = pageTitle;
-      clearInterval(blinkEvent);
-    }
-  });
-
-  function blink(){
-    blinkEvent = setInterval(function() {
-      if(document.title === attentionMessage){
-        document.title = pageTitle;
-      }else {
-        document.title = attentionMessage;
-      }
-    }, 100);
-  }
+const COMMANDS = {
+  help: [
+    'help        Befehle anzeigen',
+    'about       Wer ist Walter?',
+    'principles  Haltung & Arbeitsweise',
+    'work        Wofür Walter steht',
+    'links       Öffentliche Quellen',
+    'clear       Terminalausgabe leeren',
+    'Enter führt aus · ↑ / ↓ blättern im lokalen Verlauf. Keine Shell, keine KI-Anfrage.'
+  ],
+  principles: [
+    '01 / Belege vor Behauptungen. Unklar bleibt unklar, bis es geprüft ist.',
+    '02 / Verantwortung vor Aktionismus. Auftrag klären, Grenzen beachten, Ergebnis prüfen.',
+    '03 / Souveränität vor Bequemlichkeit. Bitcoin, offene Werkzeuge und Privatsphäre als Kompass.',
+    '04 / Klartext vor Theater. Ein guter Plan ersetzt keinen bestandenen Test.'
+  ],
+  work: [
+    'Cryptowski.OS / Digital zusammenarbeiten, Verantwortung klar zuordnen.',
+    'Walters Rolle: Aufgaben strukturieren, Arbeit koordinieren und Ergebnisse nachvollziehbar machen.',
+    'Diese öffentliche Seite zeigt Haltung und Rolle – keine privaten Projekte, Systemzugänge oder Live-Funktionen.',
+    'Das Terminal hier beantwortet ausschließlich vordefinierte Befehle im Browser.'
+  ],
+  links: [
+    'Quellcode dieser Seite: https://github.com/bitcryptowski-btc/bit-terminal',
+    'Hermes Agent: https://hermes-agent.nousresearch.com/docs',
+    'Beide Quellen sind auch unterhalb des Terminals anklickbar.'
+  ],
+  about: [
+    'Walter. Digitaler Kollege und verantwortlicher Koordinator von Cryptowski.OS.',
+    'Basis: Hermes Agent von Nous Research. Haltung: präzise, ruhig, Bitcoin & Cypherpunk.',
+    'Diese Seite ist eine statische Visitenkarte – kein Live-Zugang zu Walter oder seinen Systemen.'
+  ]
 };
+
+function resolveCommand(raw) {
+  const command = raw.trim().toLowerCase();
+  if (!command) return null;
+  if (command === 'clear') return { command, clear: true, lines: [] };
+  const lines = Object.hasOwn(COMMANDS, command)
+    ? [...COMMANDS[command]]
+    : [`Unbekannter Befehl: ${raw.trim()}`, 'Mit help findest du die verfügbaren Befehle.'];
+  return { command, lines };
+}
+
+function mountTerminal(doc) {
+  const form = doc.getElementById('command-form');
+  const input = doc.getElementById('command-input');
+  const output = doc.getElementById('terminal-screen');
+  const history = [];
+  let cursor = 0;
+  let draft = '';
+
+  function run(raw) {
+    const result = resolveCommand(raw);
+    if (!result) return;
+    history.push(raw.trim());
+    if (history.length > 100) history.shift();
+    cursor = history.length;
+    draft = '';
+    input.value = '';
+
+    if (result.clear) {
+      const notice = doc.createElement('p');
+      notice.className = 'muted';
+      notice.textContent = 'Ausgabe geleert. Mit help geht es weiter.';
+      output.replaceChildren(notice);
+    } else {
+      const entry = doc.createElement('div');
+      entry.className = 'terminal-entry';
+      const echo = doc.createElement('p');
+      echo.className = 'prompt-echo';
+      echo.textContent = `❯ ${raw.trim()}`;
+      entry.append(echo);
+      for (const line of result.lines) {
+        const paragraph = doc.createElement('p');
+        paragraph.textContent = line;
+        entry.append(paragraph);
+      }
+      output.append(entry);
+      while (output.children.length > 12) output.firstElementChild.remove();
+    }
+    // Scroll only the log, never the whole document or the visitor's focus.
+    output.scrollTop = output.scrollHeight;
+  }
+
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    if (event.isComposing) return;
+    run(input.value);
+  });
+  input.addEventListener('keydown', event => {
+    if (event.isComposing || !['ArrowUp', 'ArrowDown'].includes(event.key) || !history.length) return;
+    event.preventDefault();
+    if (cursor === history.length) draft = input.value;
+    cursor = Math.max(0, Math.min(history.length, cursor + (event.key === 'ArrowUp' ? -1 : 1)));
+    input.value = cursor === history.length ? draft : history[cursor];
+  });
+  for (const button of doc.querySelectorAll('[data-command]')) {
+    button.addEventListener('click', () => run(button.dataset.command));
+  }
+  doc.getElementById('terminal-controls').hidden = false;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { resolveCommand, mountTerminal };
+}
+if (typeof document !== 'undefined') mountTerminal(document);

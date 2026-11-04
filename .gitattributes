@@ -1,0 +1,9 @@
+# Consistent text normalization across the legacy CRLF and new LF files.
+* text=auto
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.cjs text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.svg text eol=lf
