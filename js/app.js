@@ -8,7 +8,13 @@ const COMMANDS = {
     'work        Wofür Walter steht',
     'links       Öffentliche Quellen',
     'clear       Terminalausgabe leeren',
-    'Enter führt aus · ↑ / ↓ blättern im lokalen Verlauf. Keine Shell, keine KI-Anfrage.'
+    'whoami      Deine Rolle in dieser Demo',
+    'pwd / ls    Öffentlichen Demo-Ordner erkunden',
+    'cat DATEI   Öffentliche Textdatei lesen, z. B. cat about.txt',
+    'echo TEXT   Text unverändert ausgeben',
+    'Enter führt aus · ↑ / ↓ Verlauf · Tab vervollständigt eindeutige Befehle.',
+    'Ctrl+C verwirft die Eingabe · Ctrl+L leert die Ausgabe (im Eingabefeld).',
+    'Lokale Shell-Demo, keine System-Shell und keine KI-Anfrage.'
   ],
   principles: [
     '01 / Belege vor Behauptungen. Unklar bleibt unklar, bis es geprüft ist.',
@@ -38,6 +44,22 @@ function resolveCommand(raw) {
   const command = raw.trim().toLowerCase();
   if (!command) return null;
   if (command === 'clear') return { command, clear: true, lines: [] };
+  if (command === 'whoami') return { command, lines: ['visitor'] };
+  if (command === 'pwd') return { command, lines: ['/public'] };
+  if (command === 'ls') return { command, lines: ['about.txt  principles.txt  work.txt  links.txt'] };
+  const [verb, ...args] = raw.trim().split(/\s+/);
+  if (verb.toLowerCase() === 'echo') {
+    return { command, lines: [raw.trim().replace(/^echo\s*/i, '')] };
+  }
+  if (verb.toLowerCase() === 'cat') {
+    const file = (args[0] || '').replace(/^\.\//, '');
+    const name = file.replace(/\.txt$/, '');
+    const readable = ['about', 'principles', 'work', 'links'];
+    const lines = args.length === 1 && file === `${name}.txt` && readable.includes(name)
+      ? [...COMMANDS[name]]
+      : ['Datei nicht gefunden. ls zeigt die öffentlichen Demo-Dateien.'];
+    return { command, lines };
+  }
   const lines = Object.hasOwn(COMMANDS, command)
     ? [...COMMANDS[command]]
     : [`Unbekannter Befehl: ${raw.trim()}`, 'Mit help findest du die verfügbaren Befehle.'];
@@ -52,6 +74,30 @@ function mountTerminal(doc) {
   let cursor = 0;
   let draft = '';
 
+  function appendEntry(raw, lines) {
+    const entry = doc.createElement('div');
+    entry.className = 'terminal-entry';
+    const echo = doc.createElement('p');
+    echo.className = 'prompt-echo';
+    echo.textContent = `visitor@walter:/public ❯ ${raw}`;
+    entry.append(echo);
+    for (const line of lines) {
+      const paragraph = doc.createElement('p');
+      paragraph.textContent = line;
+      entry.append(paragraph);
+    }
+    output.append(entry);
+    while (output.children.length > 12) output.firstElementChild.remove();
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function clearOutput() {
+    const notice = doc.createElement('p');
+    notice.className = 'muted';
+    notice.textContent = 'Ausgabe geleert. Mit help geht es weiter.';
+    output.replaceChildren(notice);
+  }
+
   function run(raw) {
     const result = resolveCommand(raw);
     if (!result) return;
@@ -62,24 +108,9 @@ function mountTerminal(doc) {
     input.value = '';
 
     if (result.clear) {
-      const notice = doc.createElement('p');
-      notice.className = 'muted';
-      notice.textContent = 'Ausgabe geleert. Mit help geht es weiter.';
-      output.replaceChildren(notice);
+      clearOutput();
     } else {
-      const entry = doc.createElement('div');
-      entry.className = 'terminal-entry';
-      const echo = doc.createElement('p');
-      echo.className = 'prompt-echo';
-      echo.textContent = `❯ ${raw.trim()}`;
-      entry.append(echo);
-      for (const line of result.lines) {
-        const paragraph = doc.createElement('p');
-        paragraph.textContent = line;
-        entry.append(paragraph);
-      }
-      output.append(entry);
-      while (output.children.length > 12) output.firstElementChild.remove();
+      appendEntry(raw.trim(), result.lines);
     }
     // Scroll only the log, never the whole document or the visitor's focus.
     output.scrollTop = output.scrollHeight;
@@ -91,15 +122,46 @@ function mountTerminal(doc) {
     run(input.value);
   });
   input.addEventListener('keydown', event => {
-    if (event.isComposing || !['ArrowUp', 'ArrowDown'].includes(event.key) || !history.length) return;
+    if (event.isComposing) return;
+    if (event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
+      if (event.key.toLowerCase() === 'l') {
+        event.preventDefault();
+        clearOutput();
+        return;
+      }
+      if (event.key.toLowerCase() === 'c' && input.selectionStart === input.selectionEnd) {
+        event.preventDefault();
+        appendEntry(`${input.value} ^C`, []);
+        input.value = '';
+        cursor = history.length;
+        draft = '';
+        return;
+      }
+    }
+    if (event.key === 'Tab' && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      const prefix = input.value.trim().toLowerCase();
+      const matches = [...Object.keys(COMMANDS), 'clear', 'whoami', 'pwd', 'ls', 'cat', 'echo'].filter(command => command.startsWith(prefix));
+      if (prefix && matches.length === 1 && matches[0] !== prefix) {
+        event.preventDefault();
+        input.value = matches[0];
+      }
+      return;
+    }
+    if (!['ArrowUp', 'ArrowDown'].includes(event.key) || !history.length) return;
     event.preventDefault();
     if (cursor === history.length) draft = input.value;
     cursor = Math.max(0, Math.min(history.length, cursor + (event.key === 'ArrowUp' ? -1 : 1)));
     input.value = cursor === history.length ? draft : history[cursor];
   });
   for (const button of doc.querySelectorAll('[data-command]')) {
-    button.addEventListener('click', () => run(button.dataset.command));
+    button.addEventListener('click', () => {
+      run(button.dataset.command);
+      input.focus({ preventScroll: true });
+    });
   }
+  output.addEventListener('click', () => {
+    if (!doc.defaultView?.getSelection()?.toString()) input.focus({ preventScroll: true });
+  });
   doc.getElementById('terminal-controls').hidden = false;
 }
 

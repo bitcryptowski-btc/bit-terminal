@@ -46,8 +46,8 @@ dd { margin: 0; }
 .demo-badge { color: var(--accent); border: 1px solid #665334; border-radius: 3px; font-size: 10px; padding: 3px 8px; white-space: nowrap; }
 .terminal-screen { height: 340px; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--line) var(--terminal); padding: 25px 24px; font-size: 13px; overflow-wrap: anywhere; }
 .terminal-screen:focus-visible { outline-offset: -4px; }
-.terminal-entry + .terminal-entry { margin-top: 26px; padding-top: 20px; border-top: 1px dashed var(--line); }
-.terminal-entry p { margin: 0 0 16px; white-space: pre-wrap; }
+.terminal-entry + .terminal-entry { margin-top: 22px; }
+.terminal-entry p { margin: 0 0 8px; white-space: pre-wrap; }
 .terminal-entry p:last-child { margin-bottom: 0; }
 .prompt-echo { color: var(--accent); font-size: 12px; }
 .prompt-echo span { margin-right: 9px; }
@@ -55,8 +55,10 @@ dd { margin: 0; }
 .muted { color: var(--muted); }
 .terminal-controls { border-top: 1px solid var(--line); }
 #command-form { display: flex; align-items: center; gap: 10px; padding: 12px 15px 12px 24px; }
-.input-prompt { color: var(--accent); }
-#command-input { flex: 1; min-width: 0; width: 100%; min-height: 44px; background: transparent; border: 0; color: var(--ink); padding: 8px; font-size: 14px; border-radius: 2px; }
+.input-prompt { color: var(--accent); font-size: 12px; white-space: nowrap; }
+.prompt-context { display: block; font-size: 10px; }
+#command-form:focus-within { background: #eebc6705; }
+#command-input { flex: 1; min-width: 0; width: 100%; min-height: 44px; background: transparent; border: 0; color: var(--ink); caret-color: var(--accent); padding: 8px; font-size: 16px; border-radius: 2px; }
 #command-input::placeholder { color: var(--muted); opacity: 1; }
 #command-input:focus-visible { outline-offset: -2px; }
 .run-button { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); color: var(--ink); font-size: 11px; }
@@ -97,6 +99,9 @@ footer .privacy { width: 100%; max-width: 100ch; font-size: 10px; }
   .terminal-screen { height: 330px; }
   .principles { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 30px; }
   h1 { font-size: 72px; }
+}
+@media (max-width: 480px) {
+  .prompt-context { display: none; }
 }
 @media (max-width: 380px) {
   .wordmark-sub { font-size: 10px; }

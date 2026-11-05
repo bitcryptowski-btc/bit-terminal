@@ -77,6 +77,62 @@ test('routes only documented commands, treats unknown input as plain text, and c
   assert.match(api.resolveCommand('about extra').lines.join(' '), /Unbekannter Befehl/);
 });
 
+test('Tab completes a command without executing or trapping normal Tab navigation', () => {
+  const { doc, nodes } = fixture();
+  api.mountTerminal(doc);
+  const input = nodes['command-input'];
+  input.value = 'pri';
+  assert.equal(input.fire('keydown', { key: 'Tab' }), true);
+  assert.equal(input.value, 'principles');
+  assert.equal(nodes['terminal-screen'].children.length, 0);
+  assert.equal(input.fire('keydown', { key: 'Tab' }), false);
+  input.value = 'ab';
+  assert.equal(input.fire('keydown', { key: 'Tab', shiftKey: true }), false);
+  assert.equal(input.value, 'ab');
+});
+
+test('read-only shell commands inspect only public virtual files and echo literal text', () => {
+  assert.equal(api.resolveCommand('whoami').lines[0], 'visitor');
+  assert.equal(api.resolveCommand('pwd').lines[0], '/public');
+  assert.match(api.resolveCommand('ls').lines.join(' '), /about.txt/);
+  assert.match(api.resolveCommand('cat about.txt').lines.join(' '), /Walter/);
+  assert.match(api.resolveCommand('cat ./principles.txt').lines.join(' '), /Souveränität/);
+  assert.match(api.resolveCommand('cat ../../etc/passwd').lines.join(' '), /nicht gefunden/);
+  assert.equal(api.resolveCommand('echo Tick TOCK; <script>').lines[0], 'Tick TOCK; <script>');
+  assert.match(api.resolveCommand('help').lines.join(' '), /whoami/);
+  assert.match(api.resolveCommand('help').lines.join(' '), /Tab/);
+});
+
+test('shell controls cancel drafts, clear output and return focus after shortcuts', () => {
+  const { doc, nodes, buttons } = fixture();
+  api.mountTerminal(doc);
+  const input = nodes['command-input'];
+  const output = nodes['terminal-screen'];
+  input.value = 'unfinished';
+  assert.equal(input.fire('keydown', { key: 'c', ctrlKey: true }), true);
+  assert.equal(input.value, '');
+  assert.match(output.children.at(-1).children[0].textContent, /unfinished.*\^C/);
+  buttons[0].fire('click');
+  assert.equal(input.focused, true);
+  assert.equal(input.fire('keydown', { key: 'l', ctrlKey: true }), true);
+  assert.match(output.children[0].textContent, /geleert/);
+  input.fire('keydown', { key: 'ArrowUp' });
+  assert.equal(input.value, 'help', 'Ctrl+L and cancelled input must not enter history');
+});
+
+test('clicking the terminal output activates input without breaking text selection', () => {
+  const { doc, nodes } = fixture();
+  let selected = '';
+  doc.defaultView = { getSelection: () => ({ toString: () => selected }) };
+  api.mountTerminal(doc);
+  nodes['terminal-screen'].fire('click');
+  assert.equal(nodes['command-input'].focused, true);
+  nodes['command-input'].focused = false;
+  selected = 'copy this';
+  nodes['terminal-screen'].fire('click');
+  assert.equal(nodes['command-input'].focused, false);
+});
+
 test('about identifies Walter without claiming a live connection', () => {
   assert.equal(typeof api.resolveCommand, 'function');
   const result = api.resolveCommand('  ABOUT  ');
