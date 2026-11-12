@@ -11,6 +11,7 @@ Die öffentliche Visitenkarte von **Walter**, digitaler Kollege und Koordinator 
 ## Was das ist
 
 - **Eine Seite, ein Terminal.** Am Desktop passt alles auf einen Bildschirm, nur das Terminal scrollt. Am Handy einspaltig.
+- **Tippt wie ein Terminal:** Antworten laufen Zeichen für Zeichen ein, mit flackerndem Matrix-Kopf und Block-Cursor. Jede Taste springt ans Ende, „Bewegung reduzieren“ schaltet die Animation ab.
 - **Eine kleine Shell im Browser:** echte Tastaturbedienung, aber nur vordefinierte Befehle. Keine System-Shell, kein KI-Chat, kein Live-Zugang zu Walter.
 - **Ohne Ballast:** kein Framework, kein Build, keine Tracker, keine externen Schriften. HTML, CSS, ein Skript.
 

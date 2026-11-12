@@ -76,6 +76,79 @@ function mountTerminal(doc) {
   let cursor = 0;
   let draft = '';
 
+  // Tipp-Animation wie im Original: Text läuft Zeichen für Zeichen ein, vorne ein paar
+  // flackernde Matrix-Zeichen und ein Block-Cursor. Ohne Browser-Animation (Tests) oder
+  // bei "Bewegung reduzieren" erscheint der Text sofort. Jede Taste springt ans Ende.
+  const view = doc.defaultView;
+  const animate = Boolean(view && typeof view.requestAnimationFrame === 'function'
+    && !view.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  const GLYPHS = '01<>/\\|{}[]*+=#$%&@~^'; // nur ASCII: läuft in jeder Monospace-Schrift
+  let typing = null;
+
+  function finishTyping() {
+    if (typing) typing.finish();
+  }
+
+  function typeOut(elements) {
+    if (!animate) return;
+    finishTyping();
+    const texts = [];
+    for (const element of elements) {
+      const walker = doc.createTreeWalker(element, view.NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (!node.nodeValue.trim()) continue;
+        texts.push([node, node.nodeValue]);
+        node.nodeValue = '';
+      }
+    }
+    if (!texts.length) return;
+    const total = texts.reduce((sum, [, text]) => sum + text.length, 0);
+    const perSecond = Math.max(140, total / 1.6); // Original-Tempo, lange Ausgaben höchstens ~1,6 s
+    const head = doc.createElement('span');
+    head.className = 'typing-head';
+    head.setAttribute('aria-hidden', 'true');
+    let index = 0;
+    let pos = 0;
+    let last = 0;
+    output.setAttribute('aria-busy', 'true');
+    form.classList.add('typing');
+
+    function done() {
+      for (const [node, text] of texts) node.nodeValue = text;
+      head.remove();
+      output.setAttribute('aria-busy', 'false');
+      form.classList.remove('typing');
+      typing = null;
+      scroller.scrollTop = scroller.scrollHeight;
+    }
+
+    function frame(now) {
+      if (typing !== state) return;
+      let budget = last ? Math.max(1, Math.round((now - last) * perSecond / 1000)) : 1;
+      last = now;
+      while (budget > 0 && index < texts.length) {
+        const [node, text] = texts[index];
+        const take = Math.min(budget, text.length - pos);
+        pos += take;
+        budget -= take;
+        node.nodeValue = text.slice(0, pos);
+        if (pos >= text.length) { index += 1; pos = 0; }
+      }
+      if (index >= texts.length) { done(); return; }
+      const [node, text] = texts[index];
+      let noise = '';
+      for (let k = 0; k < Math.min(3, text.length - pos); k++) noise += GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      head.textContent = noise;
+      node.after(head);
+      scroller.scrollTop = scroller.scrollHeight;
+      view.requestAnimationFrame(frame);
+    }
+
+    const state = { finish: done };
+    typing = state;
+    view.requestAnimationFrame(frame);
+  }
+
   function appendEntry(raw, lines) {
     const entry = doc.createElement('div');
     entry.className = 'terminal-entry';
@@ -91,13 +164,16 @@ function mountTerminal(doc) {
     output.append(entry);
     while (output.children.length > 12) output.firstElementChild.remove();
     scroller.scrollTop = scroller.scrollHeight;
+    typeOut([...entry.children].slice(1)); // die eingegebene Zeile steht sofort, die Antwort tippt
   }
 
   function clearOutput() {
     const notice = doc.createElement('p');
     notice.className = 'muted';
     notice.textContent = 'Ausgabe geleert. Mit help geht es weiter.';
+    finishTyping();
     output.replaceChildren(notice);
+    typeOut([notice]);
   }
 
   function run(raw) {
@@ -125,6 +201,7 @@ function mountTerminal(doc) {
   });
   input.addEventListener('keydown', event => {
     if (event.isComposing) return;
+    finishTyping();
     if (event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
       if (event.key.toLowerCase() === 'l') {
         event.preventDefault();
@@ -166,6 +243,7 @@ function mountTerminal(doc) {
     if (!doc.defaultView?.getSelection()?.toString()) input.focus({ preventScroll: true });
   });
   form.hidden = false;
+  typeOut([...output.children]); // Begrüßung tippt beim Laden, wie im Original
 }
 
 if (typeof module !== 'undefined' && module.exports) {

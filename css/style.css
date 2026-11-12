@@ -64,6 +64,10 @@ dd { margin: 0; }
 #command-input { flex: 1; min-width: 0; min-height: 44px; margin: -12px 0; padding: 0 0 0 .6ch; background: transparent; border: 0; color: var(--ink); caret-color: var(--accent); font-size: 13px; line-height: 1.55; }
 #command-input:focus, #command-input:focus-visible { outline: none; }
 .terminal-body:focus-within .prompt { text-shadow: 0 0 10px #eebc6740; }
+.typing-head { color: var(--accent); opacity: .75; }
+.typing-head::after { content: ""; display: inline-block; width: .6em; height: 1.15em; margin-left: 1px; vertical-align: -.22em; background: var(--accent); }
+.prompt-line { transition: opacity .18s ease; }
+.prompt-line.typing { opacity: 0; }
 .terminal-note { margin: 10px 2px 0; color: var(--muted); font-size: 10px; }
 .no-script { padding: 12px 24px; color: var(--accent); font-size: 12px; }
 .principles { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.25fr); gap: clamp(32px, 5vw, 80px); padding: 36px 0 42px; border-top: 1px solid var(--line); }
