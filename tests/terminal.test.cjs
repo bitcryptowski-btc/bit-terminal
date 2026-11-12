@@ -141,3 +141,21 @@ test('about identifies Walter without claiming a live connection', () => {
   assert.match(result.lines.join(' '), /Hermes Agent/);
   assert.match(result.lines.join(' '), /kein Live-Zugang/);
 });
+
+test('title easter egg calls the Dude while the tab is hidden and restores the title', () => {
+  const listeners = {};
+  let tick = null;
+  const doc = {
+    title: 'Walter', hidden: false,
+    addEventListener: (name, fn) => { listeners[name] = fn; },
+    defaultView: { setInterval: fn => { tick = fn; return 1; }, clearInterval: () => { tick = null; }, matchMedia: () => ({ matches: false }) }
+  };
+  api.mountTitleEgg(doc);
+  doc.hidden = true; listeners.visibilitychange();
+  assert.match(doc.title, /Dude/);
+  tick(); assert.equal(doc.title, 'Walter');
+  tick(); assert.match(doc.title, /Dude/);
+  doc.hidden = false; listeners.visibilitychange();
+  assert.equal(doc.title, 'Walter');
+  assert.equal(tick, null);
+});

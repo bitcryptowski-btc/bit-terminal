@@ -246,7 +246,28 @@ function mountTerminal(doc) {
   typeOut([...output.children]); // Begrüßung tippt beim Laden, wie im Original
 }
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { resolveCommand, mountTerminal };
+// Easter Egg aus dem Original: Verlässt man den Tab, ruft der Titel nach dem Dude.
+// Ruhiger als früher (ca. 1 s statt 100 ms); bei "Bewegung reduzieren" ohne Blinken.
+function mountTitleEgg(doc) {
+  const view = doc.defaultView;
+  if (!view || typeof view.setInterval !== 'function') return;
+  const original = doc.title;
+  const call = '💩🤖 Äh, Dude?';
+  const calm = view.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  let timer = null;
+  doc.addEventListener('visibilitychange', () => {
+    view.clearInterval(timer);
+    timer = null;
+    if (!doc.hidden) { doc.title = original; return; }
+    doc.title = call;
+    if (!calm) timer = view.setInterval(() => { doc.title = doc.title === call ? original : call; }, 1000);
+  });
 }
-if (typeof document !== 'undefined') mountTerminal(document);
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { resolveCommand, mountTerminal, mountTitleEgg };
+}
+if (typeof document !== 'undefined') {
+  mountTerminal(document);
+  mountTitleEgg(document);
+}
